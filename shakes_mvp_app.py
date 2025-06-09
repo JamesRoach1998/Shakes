@@ -2,7 +2,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import sounddevice as sd
 import speech_recognition as sr
 
 # Load the mora dataset
@@ -17,7 +16,7 @@ def load_mora_map():
             mora_map[mora] = pattern
     return mora_map
 
-# Define vibration durations (in milliseconds)
+# Define rhythm durations
 RHYTHM_DURATION = {
     "s": 100,
     "ŝ": 130,
@@ -36,16 +35,6 @@ def pattern_to_sequence(pattern):
     tokens = pattern.split("-")
     return [(tok, RHYTHM_DURATION.get(tok, 100)) for tok in tokens]
 
-def play_pattern(sequence):
-    fs = 44100  # sample rate
-    for symbol, duration in sequence:
-        if symbol in RHYTHM_DURATION:
-            t = duration / 1000.0
-            freq = 70
-            samples = (np.sin(2 * np.pi * np.arange(fs * t) * freq / fs)).astype(np.float32)
-            sd.play(samples, samplerate=fs)
-            sd.wait()
-
 # Speech recognition
 @st.cache_resource
 def get_recognizer():
@@ -62,8 +51,8 @@ def recognize_speech():
             return ""
 
 # Streamlit UI
-st.set_page_config(page_title="Shakes Translator", layout="centered")
-st.title("🧠 Shakes Language MVP")
+st.set_page_config(page_title="Shakes Translator (Cloud)", layout="centered")
+st.title("🧠 Shakes Language MVP (Cloud Version)")
 
 mora_map = load_mora_map()
 
@@ -90,9 +79,10 @@ if user_input:
     for mora in moras:
         pattern = mora_map.get(mora)
         if pattern:
-            sequence = pattern_to_sequence(pattern)
             st.markdown(f"`{mora}` → {pattern}`")
-            if st.button(f"▶️ Play `{mora}`", key=mora):
+        else:
+            st.warning(f"No pattern found for '{mora}'")
+
                 play_pattern(sequence)
         else:
             st.warning(f"No pattern found for '{mora}'")
